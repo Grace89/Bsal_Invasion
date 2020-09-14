@@ -24,3 +24,9 @@ ________________________________________________________________________________
    [Reactive treatment](https://github.com/Grace89/Bsal_Invasion/tree/master/SimulationCode/Bsal_Invasion_react.R)
    
    [Proactive & reactive treatment](https://github.com/Grace89/Bsal_Invasion/tree/master/SimulationCode/Bsal_Invasion_pro_react.R)
+
+### 3. Output of simulations
+
+   [Entire trajectory](https://github.com/Grace89/Bsal_Invasion/tree/master/SimOutput/Trajectory/)
+   
+   [Last occasion](https://github.com/Grace89/Bsal_Invasion/tree/master/SimOutput/Summary/)
