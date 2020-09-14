@@ -8,7 +8,7 @@ ________________________________________________________________________________
 ## Repository Directory
 
 ### 1. Code for parameter combinations
-   [No managment parameters](https://github.com/Grace89/Bsal_Invasion/tree/master/ParameterCombinations/LHS_parameter_combos_none.R)
+   [No managment](https://github.com/Grace89/Bsal_Invasion/tree/master/ParameterCombinations/LHS_parameter_combos_none.R)
    
    [Proactive treatment](https://github.com/Grace89/Bsal_Invasion/tree/master/ParameterCombinations/LHS_parameter_combos_pro.R)
    
@@ -17,7 +17,7 @@ ________________________________________________________________________________
    [Proactive & reactive treatment](https://github.com/Grace89/Bsal_Invasion/tree/master/ParameterCombinations/LHS_parameter_combos_pro_react.R)
 
 ### 2. Code for simulations
-   [No managment parameters](https://github.com/Grace89/Bsal_Invasion/tree/master/SimulationCode/Bsal_Invasion_none.R)
+   [No managment](https://github.com/Grace89/Bsal_Invasion/tree/master/SimulationCode/Bsal_Invasion_none.R)
    
    [Proactive treatment](https://github.com/Grace89/Bsal_Invasion/tree/master/SimulationCode/Bsal_Invasion_pro.R)
    
