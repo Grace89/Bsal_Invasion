@@ -71,7 +71,7 @@ options(digits=3)
 #setwd("C:\\Users\\ehgrant\\Documents\\Diseases\\WNS_Bsal Postdoc\\BSAL\\Transition model")
 
 # Grace
-#setwd("~/Dropbox/USGS/Bsal elicitation/")
+# setwd("~/Github/Bsal_Invasion/")
 
 # Molly
 setwd("~/My_FILES/1_USGS_BsalDS_Postdoc/Patux_Transition_Mod")
@@ -82,7 +82,15 @@ library("tidyverse")
 library("mc2d")
 
 
+
+
+
+
 # 2. Define the site/survey conditions ---------------------------------------------------------------
+
+
+
+
 
 # Number of simulations
 n.sim <- 1
@@ -101,8 +109,24 @@ n.pre.yrs <- 5 #param_combos$n.pre.yrs[niter]
 
 
 
+# temp - run these to troubleshoot
+n.yrs.post.Bsal.pre.treat <- n.pre.yrs + 3
+n.post.Bsal.post.treat <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + 3
+n.occasions <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + n.post.Bsal.post.treat
+
+
+
+
+
+
+
 
 # 3. Format the parameter estimates ---------------------------------------------------------------
+
+
+
+
+
 
 
 # There are 6 states each patch can be in: (#?# patch = site?-- Yes)
@@ -184,7 +208,18 @@ d_L_react <- rpert(n.sim, min = 0.1, max = 0.35, mode = 0.2)
 
 
 
+
+
+
+
+
+
 # 4. Define the function to run the simulation ---------------------------------------------------------------
+
+
+
+
+# Don't run the function  so that we can troubleshoot - i.e., don't run lines 225 - 234
 
 
 Bsal.sim.react <- function(
@@ -241,60 +276,6 @@ Bsal.sim.react <- function(
   # Defining the transition matrix
   Bsal_trans_mat_react <- array(NA, dim = c(n.states, n.states,n.occasions, n.sim))
   
-  for(i in 1:n.sim){
-    Bsal_trans_mat_react[,,i] <- matrix(c(
-      
-      # Row 1
-      (1-c_S_react[i])*(1-c_H_react[i]),  # Col 1  bh -> bh
-      (1-c_S_react[i])*c_H_react[i],      # Col 2  bh -> bH
-      c_S_react[i]*(1-c_H_react[i]),      # Col 3  bh -> sh
-      c_S_react[i]*c_H_react[i],          # Col 4  bh -> sH
-      0,                                  # Col 5  bh -> Lh
-      0,                                  # Col 6  bh -> LH
-      
-      # Row 2
-      (1-c_S_react[i])*(1-phi_Hb_react[i]), # Col 1  bH -> bh #?# are we asking experts for both survival prob if Bsal is there and its not?? Yes based on l151-157  No but with get it from the 1 - its there.
-      (1-c_S_react[i])*phi_Hb_react[i],     # Col 2  bH -> bH
-      c_S_react[i]*(1-phi_Hb_react[i]),     # Col 3  bH -> sh
-      c_S_react[i]*phi_Hb_react[i],         # Col 4  bH -> sH
-      0,                                    # Col 5  bH -> Lh
-      0,                                    # Col 6  bH -> LH
-      
-      # Row 3
-      e_S_react[i]*(1-c_H_react[i]),                      # Col 1 sh -> bh
-      e_S_react[i]*c_H_react[i],                          # Col 2 sh -> bH
-      (1-e_S_react[i])*(1-g_S_react[i])*(1-c_H_react[i]), # Col 3 sh -> sh
-      (1-e_S_react[i])*(1-g_S_react[i])*c_H_react[i],     # Col 4 sh -> sH
-      (1-e_S_react[i])*g_S_react[i]*(1-c_H_react[i]),     # Col 5 sh -> Lh **** Does not match trans matrix written--> MCB updated PP 1/18/22
-      (1-e_S_react[i])*g_S_react[i]*c_H_react[i],         # Col 6 sh -> LH **** Does not match trans matrix written--> MCB updated PP 1/18/22
-      
-      # Row 4
-      e_S_react[i]*(1-phi_Hs_react[i]),                     # Col 1  sH -> bh
-      e_S_react[i]*phi_Hs_react[i],                         # Col 2  sH -> bH
-      (1-e_S_react[i])*(1-g_S_react[i])*(1-phi_Hs_react[i]),# Col 3  sH -> sh
-      (1-e_S_react[i])*(1-g_S_react[i])*phi_Hs_react[i],    # Col 4  sH -> sH
-      (1-e_S_react[i])*g_S_react[i]*(1-phi_Hs_react[i]),    # Col 5  sH -> Lh **** Does not match trans matrix--> MCB updated PP 1/18/22 written
-      (1-e_S_react[i])*g_S_react[i]*phi_Hs_react[i],        # Col 6  sH -> LH **** Does not match trans matrix--> MCB updated PP 1/18/22 written
-      
-      # Row 5
-      e_L_react[i]*(1-c_H_react[i]),                        # Col 1  Lh -> bh
-      e_L_react[i]*c_H_react[i],                            # Col 2  Lh -> bH
-      (1-e_L_react[i])*d_L_react[i]*(1-c_H_react[i]),       # Col 3  Lh -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
-      (1-e_L_react[i])*d_L_react[i]*c_H_react[i],           # Col 4  Lh -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
-      (1-e_L_react[i])*(1-d_L_react[i])*(1-c_H_react[i]),   # Col 5  Lh -> Lh
-      (1-e_L_react[i])*(1-d_L_react[i])*(c_H_react[i]),     # Col 6  Lh -> LH
-      
-      # Row 6
-      e_L_react[i]*(1-phi_HL_react[i]),                      # Col 1  LH -> bh
-      e_L_react[i]*phi_HL_react[i],                          # Col 2  LH -> bH
-      (1-e_L_react[i])*d_L_react[i]*(1-phi_HL_react[i]),     # Col 3  LH -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
-      (1-e_L_react[i])*d_L_react[i]*phi_HL_react[i],         # Col 4  LH -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
-      (1-e_L_react[i])*(1-d_L_react[i])*(1-phi_HL_react[i]), # Col 5  LH -> Lh
-      (1-e_L_react[i])*(1-d_L_react[i])*phi_HL_react[i]      # Col 6  LH -> LH
-      
-    ), 
-    nrow = n.states, ncol = n.states, byrow = TRUE)
-  }
   
   # Check that all the rows sum to 1
   # rowSums(Bsal_trans_mat_react[, , 1])
@@ -354,21 +335,26 @@ Bsal.sim.react <- function(
       
       # Pre-Bsal invasion timesteps
       for(k in 2:n.pre.yrs){ #M# for each yr between 1st timestep and Bsal
+        
         for(i in 1:n.sites){
-        z[i, k, n] <- which(rmultinom(1, 1, trans_mat[z[i, k-1, n], ,k-1, n]) == 1) 
+        
+          z[i, k, n] <- which(rmultinom(1, 1, trans_mat[z[i, k-1, n], ,k-1, n]) == 1) 
         #M# draw a random number of size 1, based on trans mat probabilities
           # Breaking down the trans_mat indexing:
             # z[i, k-1, n] = the state of site i in time point k-1 in a given simulation
             # then we want all the probabilities in that column (= same timept)
             # And we are on the nth simulation
           # Then, the state at the next time step k goes into z[i,k,n] #M# based on the probabilities in the col?
-        }
+       
+         }
       
       occ <- length(which(z[,k-1,n]==2))/n.sites # calculate the proportion of sites occupies at the previous timestep for each timestep between first and Bsal arrival
       c_H <- plogis(c_H_alpha + c_H_beta*occ) # function allowing c_H to depend on occ.
         
     #transition matrix for timesteps between 2 and Bsal arrival; based on the c_H autologistic function
-        trans_mat[,,k-1,n] <- matrix(c( 
+      
+      #*# This was trans_mat[,,k-1,n] BUT should have been trans_mat[,,k,n]
+        trans_mat[,,k,n] <- matrix(c( 
           
           # Row 1
           (1-c_H), # Col 1     bh -> bh  - a site remains unoccupied
@@ -416,13 +402,18 @@ Bsal.sim.react <- function(
     
   }
   
+  
+  
   # Then, simulate the dynamics - after Bsal arrival
   
   for(n in 1:n.sim){ # within each simulation 
     
-    occ_total <- length(which(z[,n.pre.yrs,n]%in% c(2,4,6)))/n.sites # calculate the propor sites occ'd
+    # Calculate occupancy for the last time step before Bd arrives
+      # Occupied sites are in states 2, 4, and 6
+    occ_total <- length(which(z[ , n.pre.yrs, n] %in% c(2, 4, 6)))/n.sites # calculate the propor sites occ'd
     c_H <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
     
+    # Fill in the Bsal_trans_mat array for timestep n.pre.yrs
     Bsal_trans_mat[,,n.pre.yrs,n] <- matrix(c(
       
       # Row 1
@@ -476,18 +467,19 @@ Bsal.sim.react <- function(
     ), 
     nrow = n.states, ncol = n.states, byrow = TRUE)
       
-      # for time after Bsal arrival & before reactive treatment
+    # for time after Bsal arrival & before reactive treatment
       for(k in (n.pre.yrs+1):n.yrs.post.Bsal.pre.treat){
         
         for(i in 1:n.sites){  # at each site
         z[i, k, n] <- which(rmultinom(1, 1, Bsal_trans_mat[z[i, k-1, n], ,k-1, n]) == 1)
         
-      }
+        }
       
       occ_total <- length(which(z[,k-1,n]%in% c(2,4,6)))/n.sites # calculate the propor sites occ'd
       c_H <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
       
-      Bsal_trans_mat[,,k-1,n] <- matrix(c(
+      #*# This was Bsal_trans_mat[,,k-1,n] but should be Bsal_trans_mat[,,k,n]
+      Bsal_trans_mat[,,k,n] <- matrix(c(
         
         # Row 1
         (1-c_S[n])*(1-c_H),  # Col 1  bh -> bh, #M# a probability that a site remains without Bsal and without hosts is a product of the prob that a site isn't colonized by Bsal [1-c_S] AND the prob that the site isn't colonized by the host [1-c_H]
@@ -540,20 +532,164 @@ Bsal.sim.react <- function(
       ), 
       nrow = n.states, ncol = n.states, byrow = TRUE)
       }
-   }
+    
+  }
+  
+
+#############      
+##### Now - we will do the same thing - BUT for after the treatment is applied ######
+#############
+  
+  
+  
+  for(n in 1:n.sim){ # within each simulation 
+    
+    # Calculate occupancy right before treatment is applied
+      # Occupied sites are in states 2, 4, and 6
+    occ_total <- length(which(z[ , n.yrs.post.Bsal.pre.treat, n] %in% c(2, 4, 6)))/n.sites # calculate the propor sites occ'd
+    c_H_react <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
+    
+    
+    
+    # Fill in the array
+    Bsal_trans_mat_react[, ,n.yrs.post.Bsal.pre.treat,n] <- matrix(c(
       
-      ##### Treatment applied ######
+      # Row 1
+      (1-c_S_react[n])*(1-c_H_react[n]),  # Col 1  bh -> bh
+      (1-c_S_react[n])*c_H_react[n],      # Col 2  bh -> bH
+      c_S_react[n]*(1-c_H_react[n]),      # Col 3  bh -> sh
+      c_S_react[n]*c_H_react[n],          # Col 4  bh -> sH
+      0,                                  # Col 5  bh -> Lh
+      0,                                  # Col 6  bh -> LH
       
+      # Row 2
+      (1-c_S_react[n])*(1-phi_Hb_react[n]), # Col 1  bH -> bh #?# are we asking experts for both survival prob if Bsal is there and its not?? Yes based on l151-157  No but with get it from the 1 - its there.
+      (1-c_S_react[n])*phi_Hb_react[n],     # Col 2  bH -> bH
+      c_S_react[n]*(1-phi_Hb_react[n]),     # Col 3  bH -> sh
+      c_S_react[n]*phi_Hb_react[n],         # Col 4  bH -> sH
+      0,                                    # Col 5  bH -> Lh
+      0,                                    # Col 6  bH -> LH
+      
+      # Row 3
+      e_S_react[n]*(1-c_H_react[n]),                      # Col 1 sh -> bh
+      e_S_react[n]*c_H_react[n],                          # Col 2 sh -> bH
+      (1-e_S_react[n])*(1-g_S_react[n])*(1-c_H_react[n]), # Col 3 sh -> sh
+      (1-e_S_react[n])*(1-g_S_react[n])*c_H_react[n],     # Col 4 sh -> sH
+      (1-e_S_react[n])*g_S_react[n]*(1-c_H_react[n]),     # Col 5 sh -> Lh **** Does not match trans matrix written--> MCB updated PP 1/18/22
+      (1-e_S_react[n])*g_S_react[n]*c_H_react[n],         # Col 6 sh -> LH **** Does not match trans matrix written--> MCB updated PP 1/18/22
+      
+      # Row 4
+      e_S_react[n]*(1-phi_Hs_react[n]),                     # Col 1  sH -> bh
+      e_S_react[n]*phi_Hs_react[n],                         # Col 2  sH -> bH
+      (1-e_S_react[n])*(1-g_S_react[n])*(1-phi_Hs_react[n]),# Col 3  sH -> sh
+      (1-e_S_react[n])*(1-g_S_react[n])*phi_Hs_react[n],    # Col 4  sH -> sH
+      (1-e_S_react[n])*g_S_react[n]*(1-phi_Hs_react[n]),    # Col 5  sH -> Lh **** Does not match trans matrix--> MCB updated PP 1/18/22 written
+      (1-e_S_react[n])*g_S_react[n]*phi_Hs_react[n],        # Col 6  sH -> LH **** Does not match trans matrix--> MCB updated PP 1/18/22 written
+      
+      # Row 5
+      e_L_react[n]*(1-c_H_react[n]),                        # Col 1  Lh -> bh
+      e_L_react[n]*c_H_react[n],                            # Col 2  Lh -> bH
+      (1-e_L_react[n])*d_L_react[n]*(1-c_H_react[n]),       # Col 3  Lh -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
+      (1-e_L_react[n])*d_L_react[n]*c_H_react[n],           # Col 4  Lh -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
+      (1-e_L_react[n])*(1-d_L_react[n])*(1-c_H_react[n]),   # Col 5  Lh -> Lh
+      (1-e_L_react[n])*(1-d_L_react[n])*(c_H_react[n]),     # Col 6  Lh -> LH
+      
+      # Row 6
+      e_L_react[n]*(1-phi_HL_react[n]),                      # Col 1  LH -> bh
+      e_L_react[n]*phi_HL_react[n],                          # Col 2  LH -> bH
+      (1-e_L_react[n])*d_L_react[n]*(1-phi_HL_react[n]),     # Col 3  LH -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
+      (1-e_L_react[n])*d_L_react[n]*phi_HL_react[n],         # Col 4  LH -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
+      (1-e_L_react[n])*(1-d_L_react[n])*(1-phi_HL_react[n]), # Col 5  LH -> Lh
+      (1-e_L_react[n])*(1-d_L_react[n])*phi_HL_react[n]      # Col 6  LH -> LH
+      
+    ), 
+    nrow = n.states, ncol = n.states, byrow = TRUE)
+    
+  
+  
+   
       # Time after Bsal arrival & after reactive treatment  #?# occasions = "timesteps"? noccasion = tottal time steps; n.yrs.post.Bsal.pre.treat = time setsp before treatment
       for(k in (n.yrs.post.Bsal.pre.treat+1):n.occasions){
         
-        z[i, k, n] <- which(rmultinom(1, 1, Bsal_trans_mat_react[z[i, k-1, n], , n]) ==1)
         
-      }
+        for(i in 1:n.sites){
+          
+          z[i, k, n] <- which(rmultinom(1, 1, Bsal_trans_mat_react[z[i, k-1, n], , k-1, n]) ==1)
+        
+        }
+        
+        # Calculate occupancy right before treatment is applied
+        # Occupied sites are in states 2, 4, and 6
+        occ_total <- length(which(z[ , k-1, n] %in% c(2, 4, 6)))/n.sites # calculate the propor sites occ'd
+        c_H_react <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
+        
+        
+        
+        # Fill in the array
+        Bsal_trans_mat_react[, ,k,n] <- matrix(c(
+          
+          # Row 1
+          (1-c_S_react[n])*(1-c_H_react[n]),  # Col 1  bh -> bh
+          (1-c_S_react[n])*c_H_react[n],      # Col 2  bh -> bH
+          c_S_react[n]*(1-c_H_react[n]),      # Col 3  bh -> sh
+          c_S_react[n]*c_H_react[n],          # Col 4  bh -> sH
+          0,                                  # Col 5  bh -> Lh
+          0,                                  # Col 6  bh -> LH
+          
+          # Row 2
+          (1-c_S_react[n])*(1-phi_Hb_react[n]), # Col 1  bH -> bh #?# are we asking experts for both survival prob if Bsal is there and its not?? Yes based on l151-157  No but with get it from the 1 - its there.
+          (1-c_S_react[n])*phi_Hb_react[n],     # Col 2  bH -> bH
+          c_S_react[n]*(1-phi_Hb_react[n]),     # Col 3  bH -> sh
+          c_S_react[n]*phi_Hb_react[n],         # Col 4  bH -> sH
+          0,                                    # Col 5  bH -> Lh
+          0,                                    # Col 6  bH -> LH
+          
+          # Row 3
+          e_S_react[n]*(1-c_H_react[n]),                      # Col 1 sh -> bh
+          e_S_react[n]*c_H_react[n],                          # Col 2 sh -> bH
+          (1-e_S_react[n])*(1-g_S_react[n])*(1-c_H_react[n]), # Col 3 sh -> sh
+          (1-e_S_react[n])*(1-g_S_react[n])*c_H_react[n],     # Col 4 sh -> sH
+          (1-e_S_react[n])*g_S_react[n]*(1-c_H_react[n]),     # Col 5 sh -> Lh **** Does not match trans matrix written--> MCB updated PP 1/18/22
+          (1-e_S_react[n])*g_S_react[n]*c_H_react[n],         # Col 6 sh -> LH **** Does not match trans matrix written--> MCB updated PP 1/18/22
+          
+          # Row 4
+          e_S_react[n]*(1-phi_Hs_react[n]),                     # Col 1  sH -> bh
+          e_S_react[n]*phi_Hs_react[n],                         # Col 2  sH -> bH
+          (1-e_S_react[n])*(1-g_S_react[n])*(1-phi_Hs_react[n]),# Col 3  sH -> sh
+          (1-e_S_react[n])*(1-g_S_react[n])*phi_Hs_react[n],    # Col 4  sH -> sH
+          (1-e_S_react[n])*g_S_react[n]*(1-phi_Hs_react[n]),    # Col 5  sH -> Lh **** Does not match trans matrix--> MCB updated PP 1/18/22 written
+          (1-e_S_react[n])*g_S_react[n]*phi_Hs_react[n],        # Col 6  sH -> LH **** Does not match trans matrix--> MCB updated PP 1/18/22 written
+          
+          # Row 5
+          e_L_react[n]*(1-c_H_react[n]),                        # Col 1  Lh -> bh
+          e_L_react[n]*c_H_react[n],                            # Col 2  Lh -> bH
+          (1-e_L_react[n])*d_L_react[n]*(1-c_H_react[n]),       # Col 3  Lh -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
+          (1-e_L_react[n])*d_L_react[n]*c_H_react[n],           # Col 4  Lh -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
+          (1-e_L_react[n])*(1-d_L_react[n])*(1-c_H_react[n]),   # Col 5  Lh -> Lh
+          (1-e_L_react[n])*(1-d_L_react[n])*(c_H_react[n]),     # Col 6  Lh -> LH
+          
+          # Row 6
+          e_L_react[n]*(1-phi_HL_react[n]),                      # Col 1  LH -> bh
+          e_L_react[n]*phi_HL_react[n],                          # Col 2  LH -> bH
+          (1-e_L_react[n])*d_L_react[n]*(1-phi_HL_react[n]),     # Col 3  LH -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
+          (1-e_L_react[n])*d_L_react[n]*phi_HL_react[n],         # Col 4  LH -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
+          (1-e_L_react[n])*(1-d_L_react[n])*(1-phi_HL_react[n]), # Col 5  LH -> Lh
+          (1-e_L_react[n])*(1-d_L_react[n])*phi_HL_react[n]      # Col 6  LH -> LH
+          
+        ), 
+        nrow = n.states, ncol = n.states, byrow = TRUE)
+        
+        
+        
+        
+      } #k
+    
+    
       
-    }
+    } #n
     
   
+
   
   
   # By this point, we have the site states, and we need to summarize them
