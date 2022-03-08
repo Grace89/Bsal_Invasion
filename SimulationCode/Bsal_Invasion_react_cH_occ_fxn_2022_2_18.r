@@ -93,7 +93,7 @@ library("mc2d")
 
 
 # Number of simulations
-n.sim <- 1
+n.sim <- 50
 
 # Number of sites 
 n.sites <- 10 #param_combos$n.sites[niter]
@@ -105,14 +105,14 @@ n.Bsal.sites <- 1 #param_combos$n.Bsal.sites[niter]
 n.states <- 6
 
 # Timesteps before Bsal arrival
-n.pre.yrs <- 5 #param_combos$n.pre.yrs[niter]
+n.pre.yrs <- 10 #param_combos$n.pre.yrs[niter]
 
 
 
 # temp - run these to troubleshoot
-n.yrs.post.Bsal.pre.treat <- n.pre.yrs + 3
-n.post.Bsal.post.treat <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + 3
-n.occasions <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + n.post.Bsal.post.treat
+#n.yrs.post.Bsal.pre.treat <- n.pre.yrs + 3
+#n.post.Bsal.post.treat <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + 3
+#n.occasions <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + n.post.Bsal.post.treat
 
 
 
@@ -129,7 +129,7 @@ n.occasions <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + n.post.Bsal.post.treat
 
 
 
-# There are 6 states each patch can be in: (#?# patch = site?-- Yes)
+# There are 6 states each site can be in:
   # 1 = bh = No Bsal, no host
   # 2 = bH = No Bsal, host is present
   # 3 = sh = Small Bsal prevalence, no host
@@ -145,13 +145,13 @@ n.occasions <- n.pre.yrs + n.yrs.post.Bsal.pre.treat + n.post.Bsal.post.treat
 # Either bh or bH
 # psi_bh = Probability a site is not occupied by a host (state = bh) before Bsal arrival
 psi_bh <- rpert(n.sim, min = 0, max = 0.40, mode = 0.2) 
-    ##rpert random number from the PERT distribution - frequently used (with the triangular distribution) to translate expert estimates of the min, max and mode of a random variable in a smooth parametric distribution. #?# Why mode and not mean -- look into?
+    ##rpert random number from the PERT distribution - frequently used (with the triangular distribution) to translate expert estimates of the min, max and mode of a random variable in a smooth parametric distribution. #M# Why mode and not mean -- look into?
 
 # psi_bH = Probability a site is occupied by a host (state = bH) before Bsal arrival
-psi_bH <- 1 - psi_bh  #?# is there a difference between defining "not occ" with rpert vs occ  Can't do rpert again because has to equal 1; doing bh first is based on questions?
+psi_bH <- 1 - psi_bh  
 
 # Before any management & Before Bsal invasion- Probability of host colonizing a site
-c_H    <- rpert(n.sim, min = 0.10, max = 0.50, mode = 0.2) 
+#c_H    <- rpert(n.sim, min = 0.10, max = 0.50, mode = 0.2) #??# delete now that we are defining c_H as a function of occ at in each matrix
 
 # Before any management & after Bsal invasion - Probability of Bsal colonizing a site
 c_S    <- rpert(n.sim, min = 0.60, max = 0.95, mode = 0.8) 
@@ -164,12 +164,14 @@ c_S_react  <- rpert(n.sim, min = 0.01, max = 0.3, mode = 0.1)
 
 c_H_alpha <- 0 # intercept
 
-c_H_beta <- 0.25 # slope
+c_H_beta <- -10 # slope
 
-# All time before any management (includes time before and following Bsal arrival) - Host survival probability with NO Bsal
-phi_Hb <- rpert(n.sim, min = 0.80, max = 0.98, mode = 0.95) #?# is this survival probability of an individual or the site/population?  the probability that the site remains occupied
 
-# After reactive management & after Bsal invasion - Host survival probability with NO Bsal
+
+# All time before any management (includes time before and following Bsal arrival) - Host persistence probability with NO Bsal
+phi_Hb <- rpert(n.sim, min = 0.80, max = 0.98, mode = 0.95) #the probability that the site remains occupied --> site persistence
+
+# After reactive management & after Bsal invasion - Host persistence (at site) probability with NO Bsal
 phi_Hb_react <- rpert(n.sim, min = 0.80, max = 0.98, mode = 0.95) 
 
 ## Before any management & after Bsal invasion - Multiplier for sites with Bsal present (small and large)
@@ -177,7 +179,7 @@ phi_Hs <- rpert(n.sim, min = 0.01, max = 0.20, mode = 0.08)
 phi_HL <- rpert(n.sim, min = 0.001, max = 0.15, mode = 0.05) 
 
 ## After reactive management & after Bsal invasion - Multiplier for sites with Bsal present (small and large)
-  # Management does not affect the baseline susceptibility  #?# reactive management doesn't but proactive could right? -- Yes
+  # Management does not affect the baseline susceptibility
 phi_Hs_react <- phi_Hs
 phi_HL_react <- phi_HL
 
@@ -215,8 +217,6 @@ d_L_react <- rpert(n.sim, min = 0.1, max = 0.35, mode = 0.2)
 
 
 # 4. Define the function to run the simulation ---------------------------------------------------------------
-
-
 
 
 # Don't run the function  so that we can troubleshoot - i.e., don't run lines 225 - 234
@@ -317,7 +317,7 @@ Bsal.sim.react <- function(
    
     occ <- length(which(z[,1,n]==2))/n.sites # calculate the proportion of sites occupies at t1
     c_H <- plogis(c_H_alpha + c_H_beta*occ) # function to make host col. dependent on occ. plogis          gets it out of logit scale (inverse logit)
-    
+
     # transition matrix for timestep 1 to 2 which is based on the c_H autologistic function
         trans_mat[,,1,n] <- matrix(c(
           
@@ -411,16 +411,16 @@ Bsal.sim.react <- function(
     # Calculate occupancy for the last time step before Bd arrives
       # Occupied sites are in states 2, 4, and 6
     occ_total <- length(which(z[ , n.pre.yrs, n] %in% c(2, 4, 6)))/n.sites # calculate the propor sites occ'd
-    c_H <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
+    c_H_bsal <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ. #??#  should this get a new name? not just c_H
     
     # Fill in the Bsal_trans_mat array for timestep n.pre.yrs
     Bsal_trans_mat[,,n.pre.yrs,n] <- matrix(c(
       
       # Row 1
-      (1-c_S[n])*(1-c_H),  # Col 1  bh -> bh
-      (1-c_S[n])*c_H,      # Col 2  bh -> bH
-      c_S[n]*(1-c_H),      # Col 3  bh -> Sh
-      c_S[n]*c_H,          # Col 4  bh -> SH
+      (1-c_S[n])*(1-c_H_bsal),  # Col 1  bh -> bh
+      (1-c_S[n])*c_H_bsal,      # Col 2  bh -> bH
+      c_S[n]*(1-c_H_bsal),      # Col 3  bh -> Sh
+      c_S[n]*c_H_bsal,          # Col 4  bh -> SH
       0,                      # Col 5  bh -> Lh
       0,                      # Col 6  bh -> LH
       
@@ -433,12 +433,12 @@ Bsal.sim.react <- function(
       0,                         # Col 6   bH -> LH
       
       # Row 3
-      e_S[n]*(1-c_H),                 # Col 1   Sh -> bh
+      e_S[n]*(1-c_H_bsal),                 # Col 1   Sh -> bh
       e_S[n]*c_H,                     # Col 2   Sh -> bH
-      (1-e_S[n])*(1-g_S[n])*(1-c_H),  # Col 3   Sh -> Sh
-      (1-e_S[n])*(1-g_S[n])*c_H,      # Col 4   Sh -> SH
-      (1-e_S[n])*g_S[n]*(1-c_H),      # Col 5   Sh -> Lh  
-      (1-e_S[n])*g_S[n]*c_H,          # Col 6   Sh -> LH  
+      (1-e_S[n])*(1-g_S[n])*(1-c_H_bsal),  # Col 3   Sh -> Sh
+      (1-e_S[n])*(1-g_S[n])*c_H_bsal,      # Col 4   Sh -> SH
+      (1-e_S[n])*g_S[n]*(1-c_H_bsal),      # Col 5   Sh -> Lh  
+      (1-e_S[n])*g_S[n]*c_H_bsal,          # Col 6   Sh -> LH  
       
       # Row 4
       e_S[n]*(1-phi_Hs[n]),                 # Col 1  SH -> bh
@@ -449,12 +449,12 @@ Bsal.sim.react <- function(
       (1-e_S[n])*g_S[n]*phi_Hs[n],          # Col 6  SH -> LH 
       
       # Row 5
-      e_L[n]*(1-c_H),                 # Col 1   Lh -> bh
-      e_L[n]*c_H,                     # Col 2   Lh -> bH
-      (1-e_L[n])*d_L[n]*(1-c_H),      # Col 3   Lh -> Sh 
-      (1-e_L[n])*(d_L[n])*(c_H),      # Col 4   Lh -> SH 
-      (1-e_L[n])*(1-d_L[n])*(1-c_H),  # Col 5   Lh -> Lh
-      (1-e_L[n])*(1-d_L[n])*(c_H),    # Col 6   Lh -> LH
+      e_L[n]*(1-c_H_bsal),                 # Col 1   Lh -> bh
+      e_L[n]*c_H_bsal,                     # Col 2   Lh -> bH
+      (1-e_L[n])*d_L[n]*(1-c_H_bsal),      # Col 3   Lh -> Sh 
+      (1-e_L[n])*(d_L[n])*(c_H_bsal),      # Col 4   Lh -> SH 
+      (1-e_L[n])*(1-d_L[n])*(1-c_H_bsal),  # Col 5   Lh -> Lh
+      (1-e_L[n])*(1-d_L[n])*(c_H_bsal),    # Col 6   Lh -> LH
       
       # Row 6
       e_L[n]*(1-phi_HL[n]),                 # Col 1  LH -> bh
@@ -476,16 +476,16 @@ Bsal.sim.react <- function(
         }
       
       occ_total <- length(which(z[,k-1,n]%in% c(2,4,6)))/n.sites # calculate the propor sites occ'd
-      c_H <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
+      c_H_bsal <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
       
       #*# This was Bsal_trans_mat[,,k-1,n] but should be Bsal_trans_mat[,,k,n]
       Bsal_trans_mat[,,k,n] <- matrix(c(
         
         # Row 1
-        (1-c_S[n])*(1-c_H),  # Col 1  bh -> bh, #M# a probability that a site remains without Bsal and without hosts is a product of the prob that a site isn't colonized by Bsal [1-c_S] AND the prob that the site isn't colonized by the host [1-c_H]
-        (1-c_S[n])*c_H,      # Col 2  bh -> bH
-        c_S[n]*(1-c_H),      # Col 3  bh -> Sh
-        c_S[n]*c_H,          # Col 4  bh -> SH
+        (1-c_S[n])*(1-c_H_bsal),  # Col 1  bh -> bh, 
+        (1-c_S[n])*c_H_bsal,      # Col 2  bh -> bH
+        c_S[n]*(1-c_H_bsal),      # Col 3  bh -> Sh
+        c_S[n]*c_H_bsal,          # Col 4  bh -> SH
         0,                      # Col 5  bh -> Lh
         0,                      # Col 6  bh -> LH
         
@@ -498,12 +498,12 @@ Bsal.sim.react <- function(
         0,                         # Col 6   bH -> LH
         
         # Row 3
-        e_S[n]*(1-c_H),                 # Col 1   Sh -> bh
-        e_S[n]*c_H,                     # Col 2   Sh -> bH
-        (1-e_S[n])*(1-g_S[n])*(1-c_H),  # Col 3   Sh -> Sh
-        (1-e_S[n])*(1-g_S[n])*c_H,      # Col 4   Sh -> SH
-        (1-e_S[n])*g_S[n]*(1-c_H),      # Col 5   Sh -> Lh  
-        (1-e_S[n])*g_S[n]*c_H,          # Col 6   Sh -> LH  
+        e_S[n]*(1-c_H_bsal),                 # Col 1   Sh -> bh
+        e_S[n]*c_H_bsal,                     # Col 2   Sh -> bH
+        (1-e_S[n])*(1-g_S[n])*(1-c_H_bsal),  # Col 3   Sh -> Sh
+        (1-e_S[n])*(1-g_S[n])*c_H_bsal,      # Col 4   Sh -> SH
+        (1-e_S[n])*g_S[n]*(1-c_H_bsal),      # Col 5   Sh -> Lh  
+        (1-e_S[n])*g_S[n]*c_H_bsal,          # Col 6   Sh -> LH  
         
         # Row 4
         e_S[n]*(1-phi_Hs[n]),                 # Col 1  SH -> bh
@@ -514,12 +514,12 @@ Bsal.sim.react <- function(
         (1-e_S[n])*g_S[n]*phi_Hs[n],          # Col 6  SH -> LH 
         
         # Row 5
-        e_L[n]*(1-c_H),                 # Col 1   Lh -> bh
-        e_L[n]*c_H,                     # Col 2   Lh -> bH
-        (1-e_L[n])*d_L[n]*(1-c_H),      # Col 3   Lh -> Sh 
-        (1-e_L[n])*(d_L[n])*(c_H),      # Col 4   Lh -> SH 
-        (1-e_L[n])*(1-d_L[n])*(1-c_H),  # Col 5   Lh -> Lh
-        (1-e_L[n])*(1-d_L[n])*(c_H),    # Col 6   Lh -> LH
+        e_L[n]*(1-c_H_bsal),                 # Col 1   Lh -> bh
+        e_L[n]*c_H_bsal,                     # Col 2   Lh -> bH
+        (1-e_L[n])*d_L[n]*(1-c_H_bsal),      # Col 3   Lh -> Sh 
+        (1-e_L[n])*(d_L[n])*(c_H_bsal),      # Col 4   Lh -> SH 
+        (1-e_L[n])*(1-d_L[n])*(1-c_H_bsal),  # Col 5   Lh -> Lh
+        (1-e_L[n])*(1-d_L[n])*(c_H_bsal),    # Col 6   Lh -> LH
         
         # Row 6
         e_L[n]*(1-phi_HL[n]),                 # Col 1  LH -> bh
@@ -546,7 +546,7 @@ Bsal.sim.react <- function(
     
     # Calculate occupancy right before treatment is applied
       # Occupied sites are in states 2, 4, and 6
-    occ_total <- length(which(z[ , n.yrs.post.Bsal.pre.treat, n] %in% c(2, 4, 6)))/n.sites # calculate the propor sites occ'd
+    occ_total <- length(which(z[ , n.yrs.post.Bsal.pre.treat, n] %in% c(2, 4, 6)))/n.sites # calculate the proportion sites occupied
     c_H_react <- plogis(c_H_alpha + c_H_beta*occ_total) # function to make host col. depend on occ.
     
     
@@ -555,15 +555,15 @@ Bsal.sim.react <- function(
     Bsal_trans_mat_react[, ,n.yrs.post.Bsal.pre.treat,n] <- matrix(c(
       
       # Row 1
-      (1-c_S_react[n])*(1-c_H_react[n]),  # Col 1  bh -> bh
-      (1-c_S_react[n])*c_H_react[n],      # Col 2  bh -> bH
-      c_S_react[n]*(1-c_H_react[n]),      # Col 3  bh -> sh
-      c_S_react[n]*c_H_react[n],          # Col 4  bh -> sH
-      0,                                  # Col 5  bh -> Lh
-      0,                                  # Col 6  bh -> LH
+      (1-c_S_react[n])*(1-c_H_react),  # Col 1  bh -> bh #??# delete [n] from c_H_react
+      (1-c_S_react[n])*c_H_react,      # Col 2  bh -> bH
+      c_S_react[n]*(1-c_H_react),      # Col 3  bh -> sh
+      c_S_react[n]*c_H_react,          # Col 4  bh -> sH
+      0,                               # Col 5  bh -> Lh
+      0,                               # Col 6  bh -> LH
       
       # Row 2
-      (1-c_S_react[n])*(1-phi_Hb_react[n]), # Col 1  bH -> bh #?# are we asking experts for both survival prob if Bsal is there and its not?? Yes based on l151-157  No but with get it from the 1 - its there.
+      (1-c_S_react[n])*(1-phi_Hb_react[n]), # Col 1  bH -> bh 
       (1-c_S_react[n])*phi_Hb_react[n],     # Col 2  bH -> bH
       c_S_react[n]*(1-phi_Hb_react[n]),     # Col 3  bH -> sh
       c_S_react[n]*phi_Hb_react[n],         # Col 4  bH -> sH
@@ -571,34 +571,34 @@ Bsal.sim.react <- function(
       0,                                    # Col 6  bH -> LH
       
       # Row 3
-      e_S_react[n]*(1-c_H_react[n]),                      # Col 1 sh -> bh
-      e_S_react[n]*c_H_react[n],                          # Col 2 sh -> bH
-      (1-e_S_react[n])*(1-g_S_react[n])*(1-c_H_react[n]), # Col 3 sh -> sh
-      (1-e_S_react[n])*(1-g_S_react[n])*c_H_react[n],     # Col 4 sh -> sH
-      (1-e_S_react[n])*g_S_react[n]*(1-c_H_react[n]),     # Col 5 sh -> Lh **** Does not match trans matrix written--> MCB updated PP 1/18/22
-      (1-e_S_react[n])*g_S_react[n]*c_H_react[n],         # Col 6 sh -> LH **** Does not match trans matrix written--> MCB updated PP 1/18/22
+      e_S_react[n]*(1-c_H_react),                      # Col 1 sh -> bh
+      e_S_react[n]*c_H_react,                          # Col 2 sh -> bH
+      (1-e_S_react[n])*(1-g_S_react[n])*(1-c_H_react), # Col 3 sh -> sh
+      (1-e_S_react[n])*(1-g_S_react[n])*c_H_react,     # Col 4 sh -> sH
+      (1-e_S_react[n])*g_S_react[n]*(1-c_H_react),     # Col 5 sh -> Lh 
+      (1-e_S_react[n])*g_S_react[n]*c_H_react,         # Col 6 sh -> LH 
       
       # Row 4
       e_S_react[n]*(1-phi_Hs_react[n]),                     # Col 1  sH -> bh
       e_S_react[n]*phi_Hs_react[n],                         # Col 2  sH -> bH
       (1-e_S_react[n])*(1-g_S_react[n])*(1-phi_Hs_react[n]),# Col 3  sH -> sh
       (1-e_S_react[n])*(1-g_S_react[n])*phi_Hs_react[n],    # Col 4  sH -> sH
-      (1-e_S_react[n])*g_S_react[n]*(1-phi_Hs_react[n]),    # Col 5  sH -> Lh **** Does not match trans matrix--> MCB updated PP 1/18/22 written
-      (1-e_S_react[n])*g_S_react[n]*phi_Hs_react[n],        # Col 6  sH -> LH **** Does not match trans matrix--> MCB updated PP 1/18/22 written
+      (1-e_S_react[n])*g_S_react[n]*(1-phi_Hs_react[n]),    # Col 5  sH -> Lh 
+      (1-e_S_react[n])*g_S_react[n]*phi_Hs_react[n],        # Col 6  sH -> LH 
       
       # Row 5
-      e_L_react[n]*(1-c_H_react[n]),                        # Col 1  Lh -> bh
-      e_L_react[n]*c_H_react[n],                            # Col 2  Lh -> bH
-      (1-e_L_react[n])*d_L_react[n]*(1-c_H_react[n]),       # Col 3  Lh -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
-      (1-e_L_react[n])*d_L_react[n]*c_H_react[n],           # Col 4  Lh -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
-      (1-e_L_react[n])*(1-d_L_react[n])*(1-c_H_react[n]),   # Col 5  Lh -> Lh
-      (1-e_L_react[n])*(1-d_L_react[n])*(c_H_react[n]),     # Col 6  Lh -> LH
+      e_L_react[n]*(1-c_H_react),                        # Col 1  Lh -> bh
+      e_L_react[n]*c_H_react,                            # Col 2  Lh -> bH
+      (1-e_L_react[n])*d_L_react[n]*(1-c_H_react),       # Col 3  Lh -> sh 
+      (1-e_L_react[n])*d_L_react[n]*c_H_react,           # Col 4  Lh -> sH 
+      (1-e_L_react[n])*(1-d_L_react[n])*(1-c_H_react),   # Col 5  Lh -> Lh
+      (1-e_L_react[n])*(1-d_L_react[n])*(c_H_react),     # Col 6  Lh -> LH
       
       # Row 6
       e_L_react[n]*(1-phi_HL_react[n]),                      # Col 1  LH -> bh
       e_L_react[n]*phi_HL_react[n],                          # Col 2  LH -> bH
-      (1-e_L_react[n])*d_L_react[n]*(1-phi_HL_react[n]),     # Col 3  LH -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
-      (1-e_L_react[n])*d_L_react[n]*phi_HL_react[n],         # Col 4  LH -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
+      (1-e_L_react[n])*d_L_react[n]*(1-phi_HL_react[n]),     # Col 3  LH -> sh 
+      (1-e_L_react[n])*d_L_react[n]*phi_HL_react[n],         # Col 4  LH -> sH 
       (1-e_L_react[n])*(1-d_L_react[n])*(1-phi_HL_react[n]), # Col 5  LH -> Lh
       (1-e_L_react[n])*(1-d_L_react[n])*phi_HL_react[n]      # Col 6  LH -> LH
       
@@ -608,7 +608,7 @@ Bsal.sim.react <- function(
   
   
    
-      # Time after Bsal arrival & after reactive treatment  #?# occasions = "timesteps"? noccasion = tottal time steps; n.yrs.post.Bsal.pre.treat = time setsp before treatment
+      # Time after Bsal arrival & after reactive treatment; noccasion = total time steps; n.yrs.post.Bsal.pre.treat = time steps before treatment
       for(k in (n.yrs.post.Bsal.pre.treat+1):n.occasions){
         
         
@@ -629,15 +629,15 @@ Bsal.sim.react <- function(
         Bsal_trans_mat_react[, ,k,n] <- matrix(c(
           
           # Row 1
-          (1-c_S_react[n])*(1-c_H_react[n]),  # Col 1  bh -> bh
-          (1-c_S_react[n])*c_H_react[n],      # Col 2  bh -> bH
-          c_S_react[n]*(1-c_H_react[n]),      # Col 3  bh -> sh
-          c_S_react[n]*c_H_react[n],          # Col 4  bh -> sH
+          (1-c_S_react[n])*(1-c_H_react),  # Col 1  bh -> bh
+          (1-c_S_react[n])*c_H_react,      # Col 2  bh -> bH
+          c_S_react[n]*(1-c_H_react),      # Col 3  bh -> sh
+          c_S_react[n]*c_H_react,          # Col 4  bh -> sH
           0,                                  # Col 5  bh -> Lh
           0,                                  # Col 6  bh -> LH
           
           # Row 2
-          (1-c_S_react[n])*(1-phi_Hb_react[n]), # Col 1  bH -> bh #?# are we asking experts for both survival prob if Bsal is there and its not?? Yes based on l151-157  No but with get it from the 1 - its there.
+          (1-c_S_react[n])*(1-phi_Hb_react[n]), # Col 1  bH -> bh 
           (1-c_S_react[n])*phi_Hb_react[n],     # Col 2  bH -> bH
           c_S_react[n]*(1-phi_Hb_react[n]),     # Col 3  bH -> sh
           c_S_react[n]*phi_Hb_react[n],         # Col 4  bH -> sH
@@ -645,34 +645,34 @@ Bsal.sim.react <- function(
           0,                                    # Col 6  bH -> LH
           
           # Row 3
-          e_S_react[n]*(1-c_H_react[n]),                      # Col 1 sh -> bh
-          e_S_react[n]*c_H_react[n],                          # Col 2 sh -> bH
-          (1-e_S_react[n])*(1-g_S_react[n])*(1-c_H_react[n]), # Col 3 sh -> sh
-          (1-e_S_react[n])*(1-g_S_react[n])*c_H_react[n],     # Col 4 sh -> sH
-          (1-e_S_react[n])*g_S_react[n]*(1-c_H_react[n]),     # Col 5 sh -> Lh **** Does not match trans matrix written--> MCB updated PP 1/18/22
-          (1-e_S_react[n])*g_S_react[n]*c_H_react[n],         # Col 6 sh -> LH **** Does not match trans matrix written--> MCB updated PP 1/18/22
+          e_S_react[n]*(1-c_H_react),                      # Col 1 sh -> bh
+          e_S_react[n]*c_H_react,                          # Col 2 sh -> bH
+          (1-e_S_react[n])*(1-g_S_react[n])*(1-c_H_react), # Col 3 sh -> sh
+          (1-e_S_react[n])*(1-g_S_react[n])*c_H_react,     # Col 4 sh -> sH
+          (1-e_S_react[n])*g_S_react[n]*(1-c_H_react),     # Col 5 sh -> Lh 
+          (1-e_S_react[n])*g_S_react[n]*c_H_react,         # Col 6 sh -> LH 
           
           # Row 4
           e_S_react[n]*(1-phi_Hs_react[n]),                     # Col 1  sH -> bh
           e_S_react[n]*phi_Hs_react[n],                         # Col 2  sH -> bH
           (1-e_S_react[n])*(1-g_S_react[n])*(1-phi_Hs_react[n]),# Col 3  sH -> sh
           (1-e_S_react[n])*(1-g_S_react[n])*phi_Hs_react[n],    # Col 4  sH -> sH
-          (1-e_S_react[n])*g_S_react[n]*(1-phi_Hs_react[n]),    # Col 5  sH -> Lh **** Does not match trans matrix--> MCB updated PP 1/18/22 written
-          (1-e_S_react[n])*g_S_react[n]*phi_Hs_react[n],        # Col 6  sH -> LH **** Does not match trans matrix--> MCB updated PP 1/18/22 written
+          (1-e_S_react[n])*g_S_react[n]*(1-phi_Hs_react[n]),    # Col 5  sH -> Lh 
+          (1-e_S_react[n])*g_S_react[n]*phi_Hs_react[n],        # Col 6  sH -> LH 
           
           # Row 5
-          e_L_react[n]*(1-c_H_react[n]),                        # Col 1  Lh -> bh
-          e_L_react[n]*c_H_react[n],                            # Col 2  Lh -> bH
-          (1-e_L_react[n])*d_L_react[n]*(1-c_H_react[n]),       # Col 3  Lh -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
-          (1-e_L_react[n])*d_L_react[n]*c_H_react[n],           # Col 4  Lh -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
-          (1-e_L_react[n])*(1-d_L_react[n])*(1-c_H_react[n]),   # Col 5  Lh -> Lh
-          (1-e_L_react[n])*(1-d_L_react[n])*(c_H_react[n]),     # Col 6  Lh -> LH
+          e_L_react[n]*(1-c_H_react),                        # Col 1  Lh -> bh
+          e_L_react[n]*c_H_react,                            # Col 2  Lh -> bH
+          (1-e_L_react[n])*d_L_react[n]*(1-c_H_react),       # Col 3  Lh -> sh 
+          (1-e_L_react[n])*d_L_react[n]*c_H_react,           # Col 4  Lh -> sH 
+          (1-e_L_react[n])*(1-d_L_react[n])*(1-c_H_react),   # Col 5  Lh -> Lh
+          (1-e_L_react[n])*(1-d_L_react[n])*(c_H_react),     # Col 6  Lh -> LH
           
           # Row 6
           e_L_react[n]*(1-phi_HL_react[n]),                      # Col 1  LH -> bh
           e_L_react[n]*phi_HL_react[n],                          # Col 2  LH -> bH
-          (1-e_L_react[n])*d_L_react[n]*(1-phi_HL_react[n]),     # Col 3  LH -> sh **** Does not match trans matrix written --> MCB updated PP 1/18/22
-          (1-e_L_react[n])*d_L_react[n]*phi_HL_react[n],         # Col 4  LH -> sH **** Does not match trans matrix written --> MCB updated PP 1/18/22
+          (1-e_L_react[n])*d_L_react[n]*(1-phi_HL_react[n]),     # Col 3  LH -> sh 
+          (1-e_L_react[n])*d_L_react[n]*phi_HL_react[n],         # Col 4  LH -> sH 
           (1-e_L_react[n])*(1-d_L_react[n])*(1-phi_HL_react[n]), # Col 5  LH -> Lh
           (1-e_L_react[n])*(1-d_L_react[n])*phi_HL_react[n]      # Col 6  LH -> LH
           
@@ -729,15 +729,15 @@ Bsal.sim.react <- function(
       # state
       # proportion of sites
       # simulation ID
-  #M# so giving the final "status" of each site after 10 yrs across all the sims #?#
+  #M# so giving the final "status" of each site after all yrs across all the sims
   last.occ <- data.frame(state = Bsal_sum.long$state[which(Bsal_sum.long$n.occasion == n.occasions)],
                          proportions = Bsal_sum.long$proportion[which(Bsal_sum.long$n.occasion == n.occasions)],
-                         n.sim = Bsal_sum.long$n.sim[which(Bsal_sum.long$n.occasion == n.occasions)]) #?# which statements? pulls out the statuses at the last occastion/timesteps
+                         n.sim = Bsal_sum.long$n.sim[which(Bsal_sum.long$n.occasion == n.occasions)]) # which statements pulls out the statuses at the last occasion/timesteps
   
   # Then add a new column and summarize the data 
     # Summarize the mean + 95% CI proportion of hosts in each state on the last occasion
   params_dat <- last.occ %>%
-    add_column(host = rep(c("h", "H", "h", "H", "h", "H"), times = n.sim))%>% #?# This is just replicating the host pres/abs for each sim which is now in long format? -- Yes
+    add_column(host = rep(c("h", "H", "h", "H", "h", "H"), times = n.sim))%>% #M# This is just replicating the host pres/abs for each sim which is now in long format
     group_by(state, host) %>%
     summarise(mean = mean(proportions),
               lower = quantile(proportions, prob = c(0.025, 0.975))[1],
@@ -754,15 +754,15 @@ Bsal.sim.react <- function(
 
 
 # 5. Run the different scenarios ---------------------------------------------------------------
-
+#??# add a no management scenario?
 
 
 # Total number of timesteps 
-tot.time <- 40
+tot.time <- 50
 
 
 # 2 timesteps
-pre.val <- 2 + n.pre.yrs  #?# this means reactive management only after 2 years? -- yes
+pre.val <- 2 + n.pre.yrs  #M# this means reactive management  after 2 years
 post.val <- tot.time - pre.val
 params_dat_2postBsalarrival <- Bsal.sim.react(n.yrs.post.Bsal.pre.treat = pre.val,
                                               n.post.Bsal.post.treat = post.val,
@@ -794,7 +794,7 @@ params_dat_16postBsalarrival <- Bsal.sim.react(n.yrs.post.Bsal.pre.treat = pre.v
 
 
 
-# 6. Create a figure with % of hosts in each group over time by scenario (#?# = when reactive treatment is done?) ---------------------------------------------------------------
+# 6. Create a figure with % of hosts in each group over time by scenario (when reactive treatment is done) ---------------------------------------------------------------
 
 
 # Create one dataframe with all the simulations
@@ -823,13 +823,13 @@ ggplot(data = vals, aes(x = n.occasion, y = proportion)) +
   geom_vline(xintercept = n.pre.yrs, lty = 2)+
   geom_vline(data = react_time, aes(xintercept = lines), lty = 2, col = "red")+
   geom_smooth()+
-  theme(axis.title = element_text(size = 17),
-        axis.text =  element_text(size = 17),
-        strip.text =  element_text(size = 17),
+  theme(axis.title = element_text(size = 12),
+        axis.text =  element_text(size = 12),
+        strip.text =  element_text(size = 12),
         legend.position = "none")
 
 # Save the figure
-# ggsave("./Figures/React_sims_proportion_vs_time_2020_11_16.pdf", height = 12, width = 13)
+ggsave("./React_sims_proportion_vs_time_2020_11_16.pdf", height = 12, width = 13)
 
 
 
@@ -863,11 +863,11 @@ ggplot(data = vals, aes(x = yrs, y = mean, col = State)) +
         axis.text =  element_text(size = 17),
         strip.text =  element_text(size = 17))
 
-##?## constraint that makes more biologically realistic; bounce back is quickly
-# deterministic model reaches equilibrium quickly; stochastic - more variability 
+##M## constraint that makes more biologically realistic; bounce back is quickly --> added autologistic function for colonization based on occupancy
+#??# deterministic model reaches equilibrium quickly; stochastic - more variability 
 
 # Save the figure
-# ggsave("./Figures/React_sims_yrs_state.pdf", height = 6, width = 8)
+ggsave("./React_sims_yrs_state_cHbeta-1.pdf", height = 6, width = 8)
 
 
 # End script
