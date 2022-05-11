@@ -73,7 +73,7 @@ print(args)
 # Iteration number
 niter <- as.numeric(args[1])
 
-
+#?# - Can we chat about the iteration number and how it  connects  in?
 
 
 # 3. Format the parameter estimates ---------------------------------------------------------------
@@ -119,14 +119,14 @@ phi_Hb_pro <- param_combos$phi_Hb_pro[niter]
 phi_Hb_pro_react <- param_combos$phi_Hb_pro_react[niter]
 
 
-# After proactive management & Bsal arrival - Multiplier for sites with Bsal present (small and large)
+# After proactive management & Bsal arrival - Multiplier for sites with Bsal present (small and large) #?# we didn't ask about  treatments w/o Bsal,  we are assuming baseline persistence from literature? #?# are the delta parameters = to phiHS and phiHL responses from experts?
 delta_s_pro <- param_combos$delta_s_pro[niter]
 delta_L_pro <- param_combos$delta_L_pro[niter]
 
 phi_Hs_pro <- phi_Hb_pro * delta_s_pro
 phi_HL_pro <- phi_Hb_pro * delta_L_pro
 
-# After proactive & reactive managemnet  & Bsal arrival - Multiplier for sites with Bsal present (small and large)
+# After proactive & reactive management  & Bsal arrival - Multiplier for sites with Bsal present (small and large) #?# Same as above?
 delta_s_pro_react <- param_combos$delta_s_pro_react[niter]
 delta_L_pro_react <- param_combos$delta_L_pro_react[niter]
 
@@ -176,16 +176,16 @@ n.Bsal.sites <- param_combos$n.Bsal.sites[niter]
 # Number of states
 n.states <- 6
 
-# Time before Bsal arrivel & before proactive treatment
+# Time before Bsal arrival & before proactive treatment
 n.pre.Bsal.pre.treat <- param_combos$n.pre.Bsal.pre.treat[niter]
 
-# Time before Bsal arrivel & before proactive treatment
+# Time before Bsal arrival & before proactive treatment #?# this should be AFTER proactive trt?
 n.pre.Bsal.post.treat <- param_combos$n.pre.Bsal.post.treat[niter]
 
-# Time after Bsal arrivel but before reactive treatment
+# Time after Bsal arrival but before reactive treatment
 n.post.Bsal.pre.treat <- param_combos$n.post.Bsal.pre.treat[niter]
 
-# Time after Bsal arrivel and after reactive treatment
+# Time after Bsal arrival and after reactive treatment
 n.post.Bsal.post.treat <- param_combos$n.post.Bsal.post.treat[niter]
 
 # Number of TOTAL timesteps
@@ -230,6 +230,7 @@ colnames(trans_mat) <- rownames(trans_mat) <- c("bh", "bH")
 
 
 # New transition matrix before Bsal invasion & after proactive treatment application
+#?#  we didn't ask for this from experts, if its the samee as baseline, should we remove?
 trans_mat_pro <- matrix(c((1-c_H_pro), c_H_pro,
                           (1-phi_Hb_pro), phi_Hb_pro), nrow = 2, ncol = 2, byrow = TRUE)
 
@@ -242,11 +243,17 @@ colnames(trans_mat_pro) <- rownames(trans_mat_pro) <- c("bh", "bH")
   # A site moves between these states with probabilities defined in the probability matrix
   # Defining the transition matrix
 Bsal_trans_mat_pro <- matrix(c(
+  #Row1
   (1-c_S_pro)*(1-c_H_pro),  (1-c_S_pro)*c_H_pro, c_S_pro*(1-c_H_pro), c_S_pro*c_H_pro, 0, 0,
+  #Row2
   (1-c_S_pro)*(1-phi_Hb_pro), (1-c_S_pro)*phi_Hb_pro, c_S_pro*(1-phi_Hb_pro), c_S_pro*phi_Hb_pro, 0, 0,
-  e_S_pro*(1-c_H_pro), e_S_pro*c_H_pro, (1-e_S_pro)*(1-g_S_pro)*(1-c_H_pro), (1-e_S_pro)*(1-g_S_pro)*c_H_pro, (1-e_S_pro)*g_S_pro*(1-c_H_pro), (1-e_S_pro)*g_S_pro*c_H_pro,
+  #Row3
+  e_S_pro*(1-c_H_pro), e_S_pro*c_H_pro,(1-e_S_pro)*(1-g_S_pro)*(1-c_H_pro), (1-e_S_pro)*(1-g_S_pro)*c_H_pro, (1-e_S_pro)*g_S_pro*(1-c_H_pro), (1-e_S_pro)*g_S_pro*c_H_pro,
+  #Row4
   e_S_pro*(1-phi_Hs_pro), e_S_pro*phi_Hs_pro , (1-e_S_pro)*(1-g_S_pro)*(1-phi_Hs_pro), (1-e_S_pro)*(1-g_S_pro)*phi_Hs_pro, (1-e_S_pro)*g_S_pro*(1-phi_Hs_pro), (1-e_S_pro)*g_S_pro*phi_Hs_pro,
-  e_L_pro*(1-c_H_pro),    e_L_pro*c_H_pro, (1-e_L_pro)*d_L_pro*c_H_pro, (1-e_L_pro)*d_L_pro*(1-c_H_pro), (1-e_L_pro)*(1-d_L_pro)*c_H_pro, (1-e_L_pro)*(1-d_L_pro)*(1-c_H_pro),
+  #Row5
+  e_L_pro*(1-c_H_pro), e_L_pro*c_H_pro, (1-e_L_pro)*d_L_pro*c_H_pro, (1-e_L_pro)*d_L_pro*(1-c_H_pro), (1-e_L_pro)*(1-d_L_pro)*c_H_pro, (1-e_L_pro)*(1-d_L_pro)*(1-c_H_pro),
+  #Row6
   e_L_pro*(1-phi_HL_pro), e_L_pro*phi_HL_pro, (1-e_L_pro)*d_L_pro*(1-phi_HL_pro), (1-e_L_pro)*d_L_pro*phi_HL_pro, (1-e_L_pro)*(1-d_L_pro)*(1-phi_HL_pro), (1-e_L_pro)*(1-d_L_pro)*phi_HL_pro
 ), 
 nrow = n.states, ncol = n.states, byrow = TRUE)
