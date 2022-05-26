@@ -23,7 +23,7 @@
 ##################################
 
 # 1. Set working directory & Load libraries
-# 2. HPC index
+# 2. HPC index #?# What is this?
 # 3. Format the parameter estimates
 # 4. Define the site/survey conditions
 # 5. Define the initial and transition matrix 
